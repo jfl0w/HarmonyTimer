@@ -60,11 +60,11 @@ button{font-family:inherit;color:inherit}
 .digital[hidden]{display:none}
 .hint{font-size:13px;opacity:.7;color:var(--on-body);min-height:18px;text-align:center}
 
-.done{position:absolute;inset:9%;border-radius:50%;background:rgba(255,255,255,.94);display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:20px}
-.done.show{display:flex;animation:pop .45s cubic-bezier(.3,1.6,.5,1)}
-.done .big{font-size:76px;animation:wiggle 1.2s ease-in-out infinite}
-.done .msg{font-size:30px;font-weight:700}
-.done .row{display:flex;gap:10px}
+#done{position:absolute;inset:9%;border-radius:50%;background:rgba(255,255,255,.94);display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:20px}
+#done.show{display:flex;animation:pop .45s cubic-bezier(.3,1.6,.5,1)}
+#done .big{font-size:76px;animation:wiggle 1.2s ease-in-out infinite}
+#done .msg{font-size:30px;font-weight:700}
+#done .row{display:flex;gap:10px}
 @keyframes pop{from{transform:scale(.6);opacity:0}}
 @keyframes wiggle{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg) translateY(-6px)}}
 
