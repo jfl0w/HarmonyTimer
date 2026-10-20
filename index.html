@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Rainbow Timer</title>
+<title>Harmony Timer</title>
 <meta name="theme-color" content="#f7a8c4">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -29,6 +29,7 @@ button{font-family:inherit;color:inherit}
 }
 .device.ding{animation:ding 1.2s ease}
 @keyframes ding{0%,100%{}30%{box-shadow:inset 0 -10px 0 var(--body-dark),0 0 0 10px #fff,0 0 60px 20px var(--body)}}
+.brand{grid-column:1/-1;margin:0 0 -6px;text-align:center;font-size:clamp(28px,4.2vw,42px);font-weight:700;letter-spacing:.01em;color:var(--on-body);text-shadow:0 2px 0 rgba(255,255,255,.35)}
 .top{grid-column:1/-1;display:flex;align-items:center;gap:10px;color:var(--on-body)}
 .modes{display:flex;gap:4px;background:rgba(255,255,255,.35);padding:5px;border-radius:999px}
 .modes button{border:0;background:transparent;font-size:16px;font-weight:600;padding:8px 14px;border-radius:999px;cursor:pointer;opacity:.75;display:flex;gap:6px;align-items:center;color:var(--ink)}
@@ -215,6 +216,7 @@ input.hue::-moz-range-thumb,input.pastel::-moz-range-thumb{width:24px;height:24p
 <body>
 
 <main class="device" id="device">
+  <h1 class="brand">Harmony Timer</h1>
   <div class="top">
     <nav class="modes" id="modes" aria-label="Timer mode">
       <button data-mode="timer"><span>⏳</span><span class="lbl">Timer</span></button>
@@ -300,7 +302,7 @@ const DEFAULTS={
   timer:{seconds:20*60},
   focus:{focus:25,short:5,long:15,every:4,cycles:4,auto:true},
   workout:{prep:10,work:20,rest:10,rounds:8,auto:true},
-  turns:{seconds:120,auto:true,players:[{name:'Player 1',emoji:'🦖',color:'#b5ead7'},{name:'Player 2',emoji:'🐱',color:'#ffc6ff'}]},
+  turns:{seconds:120,auto:true,players:[{name:'Harmony',emoji:'🦄',color:'#ffb3d1'},{name:'Espen',emoji:'🦖',color:'#b5ead7'}]},
   tasks:mkTasks(),
   hold:false
 };
@@ -315,6 +317,11 @@ function merge(d,s){
 }
 function load(){ try{const r=localStorage.getItem(LS); if(r) return merge(clone(DEFAULTS),JSON.parse(r));}catch(e){} return clone(DEFAULTS); }
 let S=load();
+(function upgradePlayers(){
+  const ps=S.turns&&S.turns.players;
+  if(ps&&ps.length===2&&ps[0].name==='Player 1'&&ps[0].emoji==='🦖'&&ps[1].name==='Player 2'&&ps[1].emoji==='🐱')
+    S.turns.players=clone(DEFAULTS.turns.players);
+})();
 let saveT; function save(){ clearTimeout(saveT); saveT=setTimeout(()=>{try{localStorage.setItem(LS,JSON.stringify(S));}catch(e){}},150); }
 const getPath=p=>p.split('.').reduce((o,k)=>o&&o[k],S);
 function setPath(p,v){const ks=p.split('.');let o=S;for(let i=0;i<ks.length-1;i++)o=o[ks[i]];o[ks[ks.length-1]]=v;}
@@ -452,15 +459,14 @@ function sector(r0,r1,a){
 }
 function niceFace(ms){
   const sec=Math.max(1,Math.ceil(ms/1000));
-  if(sec>=120&&sec<=300){const faceU=Math.ceil(sec/30)*30;return {unit:1,step:30,faceU,maxMs:faceU*1000,mmss:true};}
-  const useSec=sec<120,unit=useSec?1:60,maxU=Math.max(1,Math.ceil(sec/unit));
+  if(sec>=120&&sec<=300) return {unit:1,step:30,faceU:sec,maxMs:sec*1000,mmss:true};
+  const useSec=sec<120,unit=useSec?1:60,exact=sec/unit,maxU=Math.max(1,Math.ceil(exact));
   const step=[1,2,5,10,15,20,30,60,120].find(s=>Math.ceil(maxU/s)<=12)||120;
-  const faceU=Math.ceil(maxU/step)*step;
-  return {unit,step,faceU,maxMs:faceU*unit*1000};
+  return {unit,step,faceU:exact,maxMs:sec*1000};
 }
 function faceInfo(){
   const p=R.phases[R.idx],dur=p?p.ms:S.timer.seconds*1000;
-  if(R.dragFace||(S.mode==='timer'&&S.look.face==='60'&&dur<=3600e3)) return niceFace(3600e3);
+  if(R.dragFace) return niceFace(3600e3);
   return niceFace(dur||3600e3);
 }
 function buildDial(f,cols){
@@ -470,13 +476,14 @@ function buildDial(f,cols){
   for(let j=0;j<N;j++) s+=`<stop offset="${(ri+(1-ri)*(N===1?1:j/(N-1))).toFixed(3)}" stop-color="${cols[N-1-j]}"/>`;
   s+='</radialGradient><filter id="ks" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity=".22"/></filter></defs>';
   s+='<circle cx="200" cy="200" r="199" style="fill:var(--body-dark)"/><circle cx="200" cy="200" r="191" fill="#fff"/>';
-  const minorEvery=f.faceU<=60?1:Math.max(1,f.step/5);
-  for(let u=0;u<f.faceU;u+=minorEvery){
-    const a=u/f.faceU*360,major=u%f.step===0,[x1,y1]=pol(major?137:143,a),[x2,y2]=pol(152,a);
+  const minorEvery=f.faceU<=60?1:(f.step%5===0?f.step/5:f.step);
+  for(let k=0;k*minorEvery<f.faceU-1e-9;k++){
+    const u=k*minorEvery,a=u/f.faceU*360,major=Math.abs(u/f.step-Math.round(u/f.step))<1e-6,[x1,y1]=pol(major?137:143,a),[x2,y2]=pol(152,a);
     s+=`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${major?'#8d7b8b':'#c8b9c4'}" stroke-width="${major?3:1.6}" stroke-linecap="round"/>`;
   }
   let i=0;
   for(let u=0;u<f.faceU;u+=f.step,i++){
+    if(u>0&&u/f.faceU>0.93) continue;
     const [x,y]=pol(f.mmss?168:172,u/f.faceU*360);
     s+=`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-size="${f.mmss?20:(f.faceU/f.step>10?24:27)}" font-weight="600" fill="${labelColor(cols[i%N])}">${f.mmss?(u%60?Math.floor(u/60)+':'+String(u%60).padStart(2,'0'):u/60):u}</text>`;
   }
@@ -779,7 +786,7 @@ function renderSettings(){
     h+=sec('App background',colorRow('look.bg',BG_SW));
     h+=sec('Timer body',colorRow('look.body',BODY_SW));
     h+=sec('Center buddy',`<div class="swatches">${EMOJIS.map(e=>`<button class="emo ${L.emoji===e?'on':''}" data-act="emoji" data-v="${e}">${e}</button>`).join('')}</div>`);
-    h+=sec('Clock face',seg('look.face',[['60','60 minutes (like the real one)'],['fit','Fit to my time']])+tog('Show number clock (mm:ss)','look.digital'));
+    h+=sec('Clock face',tog('Show number clock (mm:ss)','look.digital')+'<p class="note">The rainbow always starts full, whatever the time is.</p>');
   } else if(tab==='modes'){
     h+=sec('📚 Focus (Pomodoro)',num('Focus time','focus.focus',1,120,1,'min')+num('Short break','focus.short',1,60,1,'min')+num('Long break','focus.long',1,60,1,'min')+num('Long break every','focus.every',0,12,1,'rounds')+num('Rounds','focus.cycles',1,12,1,'')+tog('Start the next part by itself','focus.auto'));
     h+=sec('💪 Move (Tabata)',num('Get ready','workout.prep',0,60,1,'sec')+num('Work','workout.work',5,600,5,'sec')+num('Rest','workout.rest',0,600,5,'sec')+num('Rounds','workout.rounds',1,50,1,'')+tog('Keep going automatically','workout.auto')+'<p class="note">Beeps on the last 3 seconds of every interval.</p>');
